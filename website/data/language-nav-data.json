@@ -11,10 +11,8 @@
     "routes": [
       { "title": "Overview", "path": "files" },
       { "title": "Override Files", "path": "files/override" },
-      {
-        "title": "Dependency Lock File",
-        "path": "files/dependency-lock"
-      }
+      { "title": "Dependency Lock File", "path": "files/dependency-lock" },
+      { "title": "Test Files", "path": "files/tests" }
     ]
   },
   {
@@ -1059,6 +1057,7 @@
       }
     ]
   },
+  { "title": "Tests", "path": "tests" },
   {
     "title": "Upgrading to Terraform v1.5",
     "path": "upgrade-guides"

@@ -244,6 +244,13 @@
     ]
   },
   {
+    "title": "Testing Terraform",
+    "routes": [
+      { "title": "Overview", "path": "test" },
+      { "title":  "<code>test<code>", "href": "/cli/commands/test"}
+    ]
+  },
+  {
     "title": "Automating Terraform",
     "routes": [
       {
