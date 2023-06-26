@@ -43,7 +43,6 @@ const (
 	tfeServiceID       = "tfe.v2"
 	headerSourceKey    = "X-Terraform-Integration"
 	headerSourceValue  = "cloud"
-	genericHostname    = "localterraform.com"
 )
 
 // Cloud is an implementation of EnhancedBackend in service of the Terraform Cloud/Enterprise
@@ -109,6 +108,7 @@ type Cloud struct {
 
 var _ backend.Backend = (*Cloud)(nil)
 var _ backend.Enhanced = (*Cloud)(nil)
+var _ backend.EnhancedRemote = (*Cloud)(nil)
 var _ backend.Local = (*Cloud)(nil)
 
 // New creates a new initialized cloud backend.
@@ -204,21 +204,25 @@ func (b *Cloud) PrepareConfig(obj cty.Value) (cty.Value, tfdiags.Diagnostics) {
 	return obj, diags
 }
 
-// configureGenericHostname aliases the cloud backend hostname configuration
-// as a generic "localterraform.com" hostname. This was originally added as a
+// Alias aliases the cloud backend hostname configuration
+// as a generic hostname. This was originally added as a
 // Terraform Enterprise feature and is useful for re-using whatever the
 // Cloud/Enterprise backend host is in nested module sources in order
 // to prevent code churn when re-using config between multiple
 // Terraform Enterprise environments.
-func (b *Cloud) configureGenericHostname() {
+func (b *Cloud) Alias(aliasHostname string) error {
 	// This won't be an error for the given constant value
-	genericHost, _ := svchost.ForComparison(genericHostname)
+	genericHost, err := svchost.ForComparison(aliasHostname)
+	if err != nil {
+		return fmt.Errorf("unusable alias hostname: %w", err)
+	}
 
 	// This won't be an error because, by this time, the hostname has been parsed and
 	// service discovery requests made against it.
 	targetHost, _ := svchost.ForComparison(b.hostname)
 
 	b.services.Alias(genericHost, targetHost)
+	return nil
 }
 
 // Configure implements backend.Enhanced.
@@ -287,7 +291,6 @@ func (b *Cloud) Configure(obj cty.Value) tfdiags.Diagnostics {
 	}
 
 	b.token = token
-	b.configureGenericHostname()
 
 	if b.client == nil {
 		cfg := &tfe.Config{

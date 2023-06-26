@@ -39,7 +39,6 @@ const (
 	defaultParallelism = 10
 	stateServiceID     = "state.v2"
 	tfeServiceID       = "tfe.v2.1"
-	genericHostname    = "localterraform.com"
 )
 
 // Remote is an implementation of EnhancedBackend that performs all
@@ -97,6 +96,7 @@ type Remote struct {
 
 var _ backend.Backend = (*Remote)(nil)
 var _ backend.Enhanced = (*Remote)(nil)
+var _ backend.EnhancedRemote = (*Remote)(nil)
 var _ backend.Local = (*Remote)(nil)
 
 // New creates a new initialized remote backend.
@@ -198,21 +198,25 @@ func (b *Remote) PrepareConfig(obj cty.Value) (cty.Value, tfdiags.Diagnostics) {
 	return obj, diags
 }
 
-// configureGenericHostname aliases the remote backend hostname configuration
-// as a generic "localterraform.com" hostname. This was originally added as a
+// Alias aliases the remote backend hostname configuration
+// as a generic hostname. This was originally added as a
 // Terraform Enterprise feature and is useful for re-using whatever the
 // Cloud/Enterprise backend host is in nested module sources in order
 // to prevent code churn when re-using config between multiple
 // Terraform Enterprise environments.
-func (b *Remote) configureGenericHostname() {
+func (b *Remote) Alias(aliasHostname string) error {
 	// This won't be an error for the given constant value
-	genericHost, _ := svchost.ForComparison(genericHostname)
+	genericHost, err := svchost.ForComparison(aliasHostname)
+	if err != nil {
+		return fmt.Errorf("unusable alias hostname: %w", err)
+	}
 
 	// This won't be an error because, by this time, the hostname has been parsed and
 	// service discovery requests made against it.
 	targetHost, _ := svchost.ForComparison(b.hostname)
 
 	b.services.Alias(genericHost, targetHost)
+	return nil
 }
 
 // Configure implements backend.Enhanced.
@@ -316,8 +320,6 @@ func (b *Remote) Configure(obj cty.Value) tfdiags.Diagnostics {
 		))
 		return diags
 	}
-
-	b.configureGenericHostname()
 
 	cfg := &tfe.Config{
 		Address:      service.String(),

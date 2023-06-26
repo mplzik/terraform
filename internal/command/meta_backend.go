@@ -37,6 +37,8 @@ import (
 	legacy "github.com/hashicorp/terraform/internal/legacy/terraform"
 )
 
+var genericHostname = "localterraform.com"
+
 // BackendOpts are the options used to initialize a backend.Backend.
 type BackendOpts struct {
 	// Config is a representation of the backend configuration block given in
@@ -346,6 +348,12 @@ func (m *Meta) BackendForPlan(settings plans.Backend) (backend.Enhanced, tfdiags
 			))
 			return nil, diags
 		}
+	}
+
+	// Set up the generic hostname for enhanced remote backends
+	if enhanced, ok := b.(backend.EnhancedRemote); ok {
+		// Set up the generic hostname alias (localterraform.com)
+		_ = enhanced.Alias(genericHostname)
 	}
 
 	// If the result of loading the backend is an enhanced backend,
@@ -831,6 +839,13 @@ func (m *Meta) backendFromState() (backend.Backend, tfdiags.Diagnostics) {
 		return nil, diags
 	}
 
+	// If the result of loading the backend is an enhanced remote backend,
+	// set up generic hostname aliasing.
+	if enhanced, ok := b.(backend.EnhancedRemote); ok {
+		// Set up the generic hostname alias (localterraform.com)
+		_ = enhanced.Alias(genericHostname)
+	}
+
 	return b, diags
 }
 
@@ -1277,6 +1292,13 @@ func (m *Meta) savedBackend(sMgr *clistate.LocalState) (backend.Backend, tfdiags
 		return nil, diags
 	}
 
+	// If the result of loading the backend is an enhanced remote backend,
+	// set up generic hostname aliasing.
+	if enhanced, ok := b.(backend.EnhancedRemote); ok {
+		// Set up the generic hostname alias (localterraform.com)
+		_ = enhanced.Alias(genericHostname)
+	}
+
 	return b, diags
 }
 
@@ -1396,6 +1418,13 @@ func (m *Meta) backendInitFromConfig(c *configs.Backend) (backend.Backend, cty.V
 
 	configureDiags := b.Configure(newVal)
 	diags = diags.Append(configureDiags.InConfigBody(c.Config, ""))
+
+	// If the result of loading the backend is an enhanced remote backend,
+	// set up generic hostname aliasing.
+	if enhanced, ok := b.(backend.EnhancedRemote); ok {
+		// Set up the generic hostname alias (localterraform.com)
+		_ = enhanced.Alias(genericHostname)
+	}
 
 	return b, configVal, diags
 }

@@ -12,6 +12,7 @@ import (
 
 	tfe "github.com/hashicorp/go-tfe"
 	version "github.com/hashicorp/go-version"
+	svchost "github.com/hashicorp/terraform-svchost"
 	"github.com/hashicorp/terraform-svchost/disco"
 	"github.com/hashicorp/terraform/internal/backend"
 	"github.com/hashicorp/terraform/internal/tfdiags"
@@ -723,5 +724,34 @@ func TestRemote_VerifyWorkspaceTerraformVersion_ignoreFlagSet(t *testing.T) {
 	wantDetail := "The local Terraform version (0.14.0) does not match the configured version for remote workspace hashicorp/prod (0.13.5)."
 	if got := diags[0].Description().Detail; got != wantDetail {
 		t.Errorf("wrong summary: got %s, want %s", got, wantDetail)
+	}
+}
+
+func TestRemote_Alias(t *testing.T) {
+	s := testServer(t)
+	b := New(testDisco(s))
+
+	diag := b.Configure(cty.ObjectVal(map[string]cty.Value{
+		"hostname":     cty.NullVal(cty.String), // Forces aliasing to test server
+		"organization": cty.StringVal("hashicorp"),
+		"token":        cty.NullVal(cty.String),
+		"workspaces": cty.ObjectVal(map[string]cty.Value{
+			"name":   cty.StringVal("prod"),
+			"prefix": cty.NullVal(cty.String),
+		}),
+	}))
+	if diag.HasErrors() {
+		t.Fatalf("expected no diagnostic errors, got %s", diag.Err())
+	}
+
+	err := b.Alias("aliasterraform.com")
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err)
+	}
+
+	alias, _ := svchost.ForComparison("aliasterraform.com")
+	_, err = b.services.Discover(alias)
+	if err != nil {
+		t.Fatalf("expected no error, but got %s", err)
 	}
 }

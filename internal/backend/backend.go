@@ -138,6 +138,17 @@ type Enhanced interface {
 	Operation(context.Context, *Operation) (*RunningOperation, error)
 }
 
+// EnhancedRemote implements behavior reserved for remote backends that
+// can perform operations.
+type EnhancedRemote interface {
+	Enhanced
+
+	// Alias sets up a services alias for the configured enhanced remote backend. This allows
+	// users to specify a generic hostname to act as the actual configured hostname
+	// in order to refer to the configuration without knowing it.
+	Alias(aliasHostname string) error
+}
+
 // Local implements additional behavior on a Backend that allows local
 // operations in addition to remote operations.
 //
